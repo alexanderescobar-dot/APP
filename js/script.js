@@ -6,6 +6,9 @@ function text(id) { return document.getElementById(id).value.trim(); }
 function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 function setVal(id, value) { var el = document.getElementById(id); if (el) el.value = value ?? ""; }
 
+var API_BASE = (window.location.protocol === "file:" || window.location.port !== "3002")
+  ? "http://localhost:3002" : "";
+
 function parseForm(formStr) {
   var parts = (formStr || "").toUpperCase().replace(/,/g, " ").split(/\s+/).filter(Boolean);
   var valid = parts.filter(function(p){ return ["G","W","E","D","P","L"].indexOf(p) !== -1; }).slice(0,5);
@@ -56,7 +59,7 @@ function strength(t) {
 }
 
 function calcProb1X2(a, b) {
-  var sa = strength(a) + 0.03; // leve ventaja local
+  var sa = strength(a) + 0.03;
   var sb = strength(b);
   var avgDraw = ((a.played ? a.draws / a.played : 0) + (b.played ? b.draws / b.played : 0)) / 2;
   var drawProb = clamp(avgDraw * 100, 18, 35);
@@ -107,7 +110,6 @@ function goalMarkets(a, b) {
 function poissonOverProb(lambda, line) {
   var threshold = Math.floor(line);
   var cum = 0;
-  var max = Math.max(20, threshold + 15);
   for (var k = 0; k <= threshold; k++) cum += poisson(k, lambda);
   return { over: (1 - cum) * 100, under: cum * 100 };
 }
@@ -116,13 +118,11 @@ function fmt(n, digits) {
   if (n === null || n === undefined || isNaN(n)) return "-";
   return Number(n).toFixed(digits === undefined ? 2 : digits);
 }
-
 function addRow(body, label, va, vb) {
   var tr = document.createElement("tr");
   tr.innerHTML = "<td>" + label + "</td><td>" + va + "</td><td>" + vb + "</td>";
   body.appendChild(tr);
 }
-
 function addMarket(body, market, result, prob) {
   var tr = document.createElement("tr");
   tr.innerHTML = "<td>" + market + "</td><td>" + result + "</td><td><strong>" + prob + "</strong></td>";
@@ -148,7 +148,6 @@ function renderResult(a, b, matchInfo) {
   }
   var p1x2 = calcProb1X2(a, b);
   var gm = goalMarkets(a, b);
-
   var lineCards = num("lineCards") ?? 3.5;
   var lineShots = num("lineShots") ?? 24.5;
   var lineCorners = num("lineCorners") ?? 9.5;
@@ -163,7 +162,6 @@ function renderResult(a, b, matchInfo) {
   document.getElementById("thB").textContent = b.name + " (Visitante)";
   document.getElementById("labelA").textContent = "Local: " + a.name;
   document.getElementById("labelB").textContent = "Visitante: " + b.name;
-
   document.getElementById("probability").innerHTML =
     '<div class="prob-box"><div>' + a.name + ' gana</div><div class="value">' + fmt(p1x2.home,1) + '%</div></div>' +
     '<div class="prob-box"><div>Empate</div><div class="value">' + fmt(p1x2.draw,1) + '%</div></div>' +
@@ -207,7 +205,6 @@ function renderResult(a, b, matchInfo) {
 
 var currentMatches = [];
 var selectedMatch = null;
-
 function setStatus(msg, isError) {
   var el = document.getElementById("match-status");
   el.textContent = msg || "";
@@ -215,7 +212,12 @@ function setStatus(msg, isError) {
 }
 
 async function fetchJson(url) {
-  var res = await fetch(url);
+  var res;
+  try {
+    res = await fetch(API_BASE + url);
+  } catch (e) {
+    throw new Error("No se pudo conectar al servidor local. Abre 'Iniciar FutbolStats.bat' o ejecuta 'npm.cmd start' en la carpeta APP.");
+  }
   var data = await res.json().catch(function(){ return {}; });
   if (!res.ok) throw new Error(data.error || ("Error HTTP " + res.status));
   return data;
@@ -233,7 +235,7 @@ async function loadCompetitions() {
       sel.appendChild(opt);
     });
   } catch (e) {
-    setStatus("No se pudieron cargar competiciones. Verifica que el servidor esté corriendo y el token en .env. " + e.message, true);
+    setStatus("No se pudieron cargar competiciones. " + e.message, true);
   }
 }
 
@@ -246,17 +248,13 @@ function renderMatches() {
     var hay = (m.homeTeam.name + " " + m.awayTeam.name + " " + (m.homeTeam.shortName||"") + " " + (m.awayTeam.shortName||"")).toLowerCase();
     return hay.indexOf(q) !== -1;
   });
-  if (!filtered.length) {
-    list.innerHTML = '<div class="status">No hay partidos para ese filtro.</div>';
-    return;
-  }
+  if (!filtered.length) { list.innerHTML = '<div class="status">No hay partidos para ese filtro.</div>'; return; }
   filtered.forEach(function(m){
     var item = document.createElement("div");
     item.className = "match-item";
     var date = new Date(m.utcDate);
     var dateStr = isNaN(date) ? m.utcDate : date.toLocaleString();
-    item.innerHTML =
-      '<div><div class="match-teams">' + m.homeTeam.name + ' (Local) vs ' + m.awayTeam.name + ' (Visitante)</div>' +
+    item.innerHTML = '<div><div class="match-teams">' + m.homeTeam.name + ' (Local) vs ' + m.awayTeam.name + ' (Visitante)</div>' +
       '<div class="match-meta">' + dateStr + ' · ' + (m.competition?.name || "") + '</div></div>' +
       '<button type="button" class="secondary" data-id="' + m.id + '">Analizar</button>';
     item.querySelector("button").addEventListener("click", function(){ selectMatch(m.id); });
@@ -275,9 +273,7 @@ async function loadMatches() {
     document.getElementById("selected-match").hidden = true;
     renderMatches();
     setStatus(currentMatches.length ? ("Se cargaron " + currentMatches.length + " partidos.") : "No se encontraron partidos próximos en ese rango.");
-  } catch (e) {
-    setStatus("Error cargando partidos: " + e.message, true);
-  }
+  } catch (e) { setStatus("Error cargando partidos: " + e.message, true); }
 }
 
 function fillTeam(prefix, stats, est) {
@@ -326,9 +322,7 @@ async function selectMatch(matchId) {
       " · " + (selectedMatch.competition?.name || "") + "</span>" + estNote;
     setStatus("Datos cargados. Puedes ajustar valores y calcular.");
     renderResult(getTeam("A"), getTeam("B"), selectedMatch);
-  } catch (e) {
-    setStatus("Error al cargar análisis: " + e.message, true);
-  }
+  } catch (e) { setStatus("Error al cargar análisis: " + e.message, true); }
 }
 
 document.getElementById("load-matches-btn").addEventListener("click", loadMatches);

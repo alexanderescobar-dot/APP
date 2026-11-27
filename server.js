@@ -30,10 +30,7 @@ const COMP_DEFAULTS = {
   WC:  { shots: 12.5, corners: 4.9, yellow: 1.8, red: 0.09 },
   DEFAULT: { shots: 12.8, corners: 5.0, yellow: 2.0, red: 0.10 }
 };
-
-function getDefaults(compCode) {
-  return COMP_DEFAULTS[compCode] || COMP_DEFAULTS.DEFAULT;
-}
+function getDefaults(compCode) { return COMP_DEFAULTS[compCode] || COMP_DEFAULTS.DEFAULT; }
 
 function getCache(key) {
   const hit = cache.get(key);
@@ -41,48 +38,50 @@ function getCache(key) {
   if (Date.now() > hit.expires) { cache.delete(key); return null; }
   return hit.value;
 }
-function setCache(key, value) {
-  cache.set(key, { value, expires: Date.now() + CACHE_TTL_MS });
-}
+function setCache(key, value) { cache.set(key, { value, expires: Date.now() + CACHE_TTL_MS }); }
 
 async function fd(pathname) {
-  if (!TOKEN || TOKEN === "PEGA_AQUI_TU_TOKEN") {
-    throw Object.assign(new Error("Falta FOOTBALL_DATA_TOKEN en .env"), { status: 500 });
-  }
   const key = pathname;
   const cached = getCache(key);
   if (cached) return cached;
-  const res = await fetch(`${API_BASE}${pathname}`, {
-    headers: { "X-Auth-Token": TOKEN }
-  });
+  const res = await fetch(`${API_BASE}${pathname}`, { headers: { "X-Auth-Token": TOKEN } });
   const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!res.ok) {
-    const err = new Error(data.message || data.error || `football-data.org ${res.status}`);
-    err.status = res.status;
-    err.details = data;
-    throw err;
-  }
+  let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!res.ok) { const err = new Error(data.message || data.error || `football-data.org ${res.status}`); err.status = res.status; err.details = data; throw err; }
   setCache(key, data);
   return data;
 }
 
 app.use(express.static(__dirname));
+app.use((req, res, next) => { // CORS for file:// / local index.html
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+
+app.get("/api/health", (req, res) => res.json({ ok: true, hasToken: !!TOKEN && TOKEN !== "PEGA_AQUI_TU_TOKEN" }));
+
+function ensureToken(res) {
+  if (!TOKEN || TOKEN === "PEGA_AQUI_TU_TOKEN") {
+    res.status(500).json({ error: "Falta FOOTBALL_DATA_TOKEN en .env. Crea el archivo .env en la carpeta APP." });
+    return false;
+  }
+  return true;
+}
 
 app.get("/api/competitions", async (req, res) => {
   try {
+    if (!ensureToken(res)) return;
     const data = await fd("/competitions");
     const allowed = new Set(["TIER_ONE"]);
     const comps = (data.competitions || []).filter(c => allowed.has(c.plan) && c.type === "LEAGUE");
     res.json({ competitions: comps.map(c => ({ id: c.id, name: c.name, code: c.code, area: c.area?.name, emblem: c.emblem })) });
-  } catch (e) {
-    res.status(e.status || 500).json({ error: e.message });
-  }
+  } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 
 app.get("/api/matches", async (req, res) => {
   try {
+    if (!ensureToken(res)) return;
     const { competition, status = "SCHEDULED", days = "14" } = req.query;
     if (!competition) return res.status(400).json({ error: "competition requerida" });
     const d = Math.max(1, Math.min(30, parseInt(days, 10) || 14));
@@ -92,18 +91,13 @@ app.get("/api/matches", async (req, res) => {
     const to = toDate.toISOString().slice(0,10);
     const data = await fd(`/competitions/${encodeURIComponent(competition)}/matches?status=${encodeURIComponent(status)}&dateFrom=${from}&dateTo=${to}`);
     const matches = (data.matches || []).map(m => ({
-      id: m.id,
-      utcDate: m.utcDate,
-      status: m.status,
-      matchday: m.matchday,
+      id: m.id, utcDate: m.utcDate, status: m.status, matchday: m.matchday,
       competition: { name: m.competition?.name, code: m.competition?.code, id: m.competition?.id },
       homeTeam: { id: m.homeTeam?.id, name: m.homeTeam?.name, shortName: m.homeTeam?.shortName, crest: m.homeTeam?.crest },
       awayTeam: { id: m.awayTeam?.id, name: m.awayTeam?.name, shortName: m.awayTeam?.shortName, crest: m.awayTeam?.crest }
     }));
     res.json({ matches });
-  } catch (e) {
-    res.status(e.status || 500).json({ error: e.message, details: e.details });
-  }
+  } catch (e) { res.status(e.status || 500).json({ error: e.message, details: e.details }); }
 });
 
 function computeTeamStats(teamId, matches, teamName) {
@@ -123,20 +117,16 @@ function computeTeamStats(teamId, matches, teamName) {
   }
   const played = wins + draws + losses;
   return {
-    name: teamName,
-    played, wins, draws, losses, gf, ga,
-    avgGF: played ? gf / played : 0,
-    avgGA: played ? ga / played : 0,
-    winPct: played ? (wins / played) * 100 : 0,
-    drawPct: played ? (draws / played) * 100 : 0,
-    lossPct: played ? (losses / played) * 100 : 0,
-    form: form.join("-") || "N/A",
-    sourceMatches: played
+    name: teamName, played, wins, draws, losses, gf, ga,
+    avgGF: played ? gf / played : 0, avgGA: played ? ga / played : 0,
+    winPct: played ? (wins / played) * 100 : 0, drawPct: played ? (draws / played) * 100 : 0, lossPct: played ? (losses / played) * 100 : 0,
+    form: form.join("-") || "N/A", sourceMatches: played
   };
 }
 
 app.get("/api/match-analysis", async (req, res) => {
   try {
+    if (!ensureToken(res)) return;
     const { matchId } = req.query;
     if (!matchId) return res.status(400).json({ error: "matchId requerido" });
     const raw = await fd(`/matches/${encodeURIComponent(matchId)}`);
@@ -146,9 +136,7 @@ app.get("/api/match-analysis", async (req, res) => {
     const awayId = m.awayTeam?.id;
     const homeName = m.homeTeam?.name || m.homeTeam?.shortName || "Local";
     const awayName = m.awayTeam?.name || m.awayTeam?.shortName || "Visitante";
-    if (!comp || !homeId || !awayId) {
-      return res.status(404).json({ error: "No se pudo resolver el partido", debug: { hasMatch: !!raw.match, keys: Object.keys(raw || {}), comp, homeId, awayId } });
-    }
+    if (!comp || !homeId || !awayId) return res.status(404).json({ error: "No se pudo resolver el partido" });
     const [homeData, awayData] = await Promise.all([
       fd(`/teams/${homeId}/matches?competitions=${encodeURIComponent(comp)}&status=FINISHED&limit=20`),
       fd(`/teams/${awayId}/matches?competitions=${encodeURIComponent(comp)}&status=FINISHED&limit=20`)
@@ -157,24 +145,11 @@ app.get("/api/match-analysis", async (req, res) => {
     const away = computeTeamStats(awayId, awayData.matches || [], awayName);
     const defaults = getDefaults(m.competition?.code);
     res.json({
-      match: {
-        id: m.id, utcDate: m.utcDate, status: m.status, venue: m.venue,
-        competition: m.competition, homeTeam: m.homeTeam, awayTeam: m.awayTeam
-      },
+      match: { id: m.id, utcDate: m.utcDate, status: m.status, venue: m.venue, competition: m.competition, homeTeam: m.homeTeam, awayTeam: m.awayTeam },
       home, away,
-      estimated: {
-        source: "estimated",
-        competitionCode: m.competition?.code || "DEFAULT",
-        note: "Valores estimados por promedio de competición. Editables manualmente.",
-        home: { ...defaults },
-        away: { ...defaults }
-      }
+      estimated: { source: "estimated", competitionCode: m.competition?.code || "DEFAULT", note: "Valores estimados por promedio de competición. Editables manualmente.", home: { ...defaults }, away: { ...defaults } }
     });
-  } catch (e) {
-    res.status(e.status || 500).json({ error: e.message, details: e.details });
-  }
+  } catch (e) { res.status(e.status || 500).json({ error: e.message, details: e.details }); }
 });
 
-app.listen(PORT, () => {
-  console.log(`FutbolStats Calc corriendo en http://localhost:${PORT}`);
-});
+app.listen(PORT, () => { console.log(`FutbolStats Calc corriendo en http://localhost:${PORT}`); });
