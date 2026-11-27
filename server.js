@@ -241,5 +241,84 @@ app.get("/api/match-analysis", async (req, res) => {
   } catch (e) { res.status(e.status || 500).json({ error: e.message, details: e.details }); }
 });
 
+const TSDB_BASE = "https://www.thesportsdb.com/api/v1/json/123";
+const NBA_DEFAULTS = { pointsFor: 112, pointsAgainst: 112, threePT: 12.5, steals: 7.5 };
+
+async function tsdb(pathname) {
+  const key = `tsdb:${pathname}`;
+  const cached = getCache(key);
+  if (cached) return cached;
+  const res = await fetch(`${TSDB_BASE}${pathname}`);
+  const text = await res.text();
+  let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!res.ok) { const err = new Error(data.message || `TheSportsDB ${res.status}`); err.status = res.status; throw err; }
+  setCache(key, data);
+  return data;
+}
+
+function computeNBATeamStats(teamId, results, teamName) {
+  const games = (results || []).filter(g => g.intHomeScore != null && g.intAwayScore != null).slice(0, 5);
+  let wins=0, losses=0, pf=0, pa=0; const form = [];
+  for (const g of games) {
+    const isHome = String(g.idHomeTeam) === String(teamId);
+    const ptsFor = Number(isHome ? g.intHomeScore : g.intAwayScore);
+    const ptsAgainst = Number(isHome ? g.intAwayScore : g.intHomeScore);
+    if (isNaN(ptsFor) || isNaN(ptsAgainst)) continue;
+    pf += ptsFor; pa += ptsAgainst;
+    if (ptsFor > ptsAgainst) { wins++; form.push("G"); }
+    else { losses++; form.push("P"); }
+  }
+  const played = wins + losses;
+  return {
+    name: teamName, played, wins, losses, draws: 0, pf, pa,
+    avgPF: played ? pf / played : NBA_DEFAULTS.pointsFor,
+    avgPA: played ? pa / played : NBA_DEFAULTS.pointsAgainst,
+    winPct: played ? (wins / played) * 100 : 50,
+    form: form.join("-") || "N/A",
+    sourceMatches: played
+  };
+}
+
+app.get("/api/nba/games", async (req, res) => {
+  try {
+    const data = await tsdb("/eventsnextleague.php?id=4387");
+    const games = (data.events || []).map(e => ({
+      id: e.idEvent,
+      utcDate: e.dateEvent + (e.strTime ? "T" + e.strTime : "T00:00:00Z"),
+      status: "SCHEDULED",
+      competition: { name: "NBA", code: "NBA" },
+      homeTeam: { id: e.idHomeTeam, name: e.strHomeTeam },
+      awayTeam: { id: e.idAwayTeam, name: e.strAwayTeam },
+      season: e.strSeason
+    }));
+    res.json({ games });
+  } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+
+app.get("/api/nba/game-analysis", async (req, res) => {
+  try {
+    const { eventId } = req.query;
+    if (!eventId) return res.status(400).json({ error: "eventId requerido" });
+    const ev = await tsdb(`/lookupevent.php?id=${encodeURIComponent(eventId)}`);
+    const e = ev.events?.[0];
+    if (!e) return res.status(404).json({ error: "Juego no encontrado" });
+    const homeId = e.idHomeTeam, awayId = e.idAwayTeam;
+    const homeName = e.strHomeTeam || "Local", awayName = e.strAwayTeam || "Visitante";
+    const [homeLast, awayLast] = await Promise.all([
+      tsdb(`/eventslast.php?id=${encodeURIComponent(homeId)}`),
+      tsdb(`/eventslast.php?id=${encodeURIComponent(awayId)}`)
+    ]);
+    const home = computeNBATeamStats(homeId, homeLast.results || [], homeName);
+    const away = computeNBATeamStats(awayId, awayLast.results || [], awayName);
+    res.json({
+      game: { id: e.idEvent, utcDate: e.dateEvent + (e.strTime ? "T" + e.strTime : "T00:00:00Z"), competition: { name: "NBA", code: "NBA" }, homeTeam: { id: homeId, name: homeName }, awayTeam: { id: awayId, name: awayName } },
+      home, away,
+      estimated: { source: "estimated", note: "3PT y robos son estimados por promedio NBA y editables. Puntos/forma se basan en últimos juegos cuando están disponibles.", home: { threePT: NBA_DEFAULTS.threePT, steals: NBA_DEFAULTS.steals }, away: { threePT: NBA_DEFAULTS.threePT, steals: NBA_DEFAULTS.steals } }
+    });
+  } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+
 app.listen(PORT, () => { console.log(`FutbolStats Calc corriendo en http://localhost:${PORT}`); });
+
+
 
