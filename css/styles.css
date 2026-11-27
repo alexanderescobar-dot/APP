@@ -6,6 +6,7 @@
   --accent: #22c55e;
   --accent2: #3b82f6;
   --border: #1f2937;
+  --danger: #ef4444;
 }
 * { box-sizing: border-box; }
 body {
@@ -28,16 +29,27 @@ body {
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 .team-block { background: #0b1220; padding: 16px; border-radius: 10px; border: 1px solid var(--border); }
 label { display: block; font-size: 0.9rem; margin-bottom: 10px; color: #d1d5db; }
-input {
+input, select {
   width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px;
   border: 1px solid #374151; background: #111827; color: var(--text);
 }
-.actions { margin-top: 16px; }
+.actions { margin-top: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 button {
   background: var(--accent); color: #052e16; border: none; padding: 12px 18px;
   border-radius: 8px; font-weight: bold; cursor: pointer;
 }
 button:hover { filter: brightness(1.05); }
+button.secondary { background: #1f2937; color: var(--text); border: 1px solid #374151; }
+.status { color: var(--muted); font-size: 0.9rem; }
+.status.error { color: #fca5a5; }
+.matches-list { margin-top: 16px; display: grid; gap: 10px; max-height: 320px; overflow: auto; }
+.match-item {
+  display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  background: #0b1220; border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+}
+.match-meta { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+.match-teams { font-weight: bold; }
+.selected-match { margin-top: 14px; padding: 12px; background: #052e16; border: 1px solid #14532d; border-radius: 10px; color: #dcfce7; }
 .probability { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
 .prob-box { background: #0b1220; border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
 .prob-box .value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
@@ -48,4 +60,5 @@ th { color: #93c5fd; }
 .summary { margin-top: 16px; padding: 14px; background: #0b1220; border-radius: 10px; border: 1px solid var(--border); }
 @media (max-width: 800px) {
   .grid-2, .probability { grid-template-columns: 1fr; }
+  .match-item { flex-direction: column; align-items: stretch; }
 }

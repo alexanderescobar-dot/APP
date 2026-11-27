@@ -10,20 +10,41 @@
   <main class="container">
     <header class="hero">
       <h1>FutbolStats Calc</h1>
-      <p>Calculadora estadística de fútbol: ingresa datos, obtén métricas, probabilidad estimada y un resumen del análisis.</p>
+      <p>Busca un partido real, carga estadísticas automáticamente y calcula una probabilidad estimada. La IA se usará después para generar el resumen con datos reales.</p>
     </header>
 
     <section class="card">
+      <h2>Buscar partido</h2>
+      <p class="hint">Selecciona una competición y busca por equipo. Los datos se obtienen desde football-data.org a través de un servidor local seguro (tu token no va en el navegador).</p>
+      <div class="grid-2">
+        <label>Competición
+          <select id="competition-select">
+            <option value="">Cargando competiciones...</option>
+          </select>
+        </label>
+        <label>Buscar equipo o partido
+          <input type="text" id="match-search" placeholder="Ej: Real Madrid, Barcelona, Arsenal..." autocomplete="off">
+        </label>
+      </div>
+      <div class="actions">
+        <button type="button" id="load-matches-btn">Cargar partidos próximos</button>
+        <span id="match-status" class="status"></span>
+      </div>
+      <div id="matches-list" class="matches-list"></div>
+      <div id="selected-match" class="selected-match" hidden></div>
+    </section>
+
+    <section class="card">
       <h2>Datos de los equipos</h2>
-      <p class="hint">Ingresa datos de los últimos partidos o promedios. La probabilidad es una estimación matemática, no garantiza resultados.</p>
+      <p class="hint">Puedes editar los valores antes de calcular. Los campos opcionales pueden quedar vacíos si la fuente no los tiene.</p>
       <form id="stats-form">
         <div class="grid-2">
           <div class="team-block">
-            <h3>Equipo A (Local)</h3>
+            <h3 id="labelA">Local</h3>
             <label>Nombre
-              <input type="text" id="nameA" value="Equipo A" required>
+              <input type="text" id="nameA" value="Equipo Local" required>
             </label>
-            <label>Partidos jugados
+            <label>Partidos analizados
               <input type="number" id="playedA" min="1" value="5" required>
             </label>
             <label>Victorias
@@ -41,7 +62,7 @@
             <label>Goles en contra
               <input type="number" id="gaA" min="0" value="4" required>
             </label>
-            <label>Forma últimos 5 (ej: G-E-P-G-G)
+            <label>Forma últimos 5 (G/E/P)
               <input type="text" id="formA" value="G-G-E-P-G" placeholder="G,E,P,G,G">
             </label>
             <label>Tiros promedio (opcional)
@@ -56,11 +77,11 @@
           </div>
 
           <div class="team-block">
-            <h3>Equipo B (Visitante)</h3>
+            <h3 id="labelB">Visitante</h3>
             <label>Nombre
-              <input type="text" id="nameB" value="Equipo B" required>
+              <input type="text" id="nameB" value="Equipo Visitante" required>
             </label>
-            <label>Partidos jugados
+            <label>Partidos analizados
               <input type="number" id="playedB" min="1" value="5" required>
             </label>
             <label>Victorias
@@ -78,7 +99,7 @@
             <label>Goles en contra
               <input type="number" id="gaB" min="0" value="6" required>
             </label>
-            <label>Forma últimos 5 (ej: G-E-P-G-G)
+            <label>Forma últimos 5 (G/E/P)
               <input type="text" id="formB" value="P-G-E-G-P" placeholder="G,E,P,G,G">
             </label>
             <label>Tiros promedio (opcional)
@@ -106,8 +127,8 @@
           <thead>
             <tr>
               <th>Métrica</th>
-              <th id="thA">Equipo A</th>
-              <th id="thB">Equipo B</th>
+              <th id="thA">Local</th>
+              <th id="thB">Visitante</th>
             </tr>
           </thead>
           <tbody id="results-body"></tbody>
@@ -116,7 +137,7 @@
       <div class="summary">
         <h3>Resumen del análisis</h3>
         <p id="summary-text"></p>
-        <p class="hint">Más adelante este resumen lo generará una IA usando datos reales obtenidos por API/backend seguro.</p>
+        <p class="hint">Estimación matemática basada en datos históricos. No garantiza resultados. El resumen con IA se integrará después mediante backend seguro.</p>
       </div>
     </section>
   </main>
