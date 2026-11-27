@@ -14,7 +14,7 @@ const AF_KEY = process.env.API_FOOTBALL_KEY;
 const FD_BASE = "https://api.football-data.org/v4";
 const AF_BASE = "https://v3.football.api-sports.io";
 const AF_LIGAPRO_ID = 242;
-const AF_LIGAPRO_SEASON = 2026;
+const AF_LIGAPRO_SEASON = Number(process.env.API_FOOTBALL_SEASON) || 2024;
 
 const cache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -242,3 +242,4 @@ app.get("/api/match-analysis", async (req, res) => {
 });
 
 app.listen(PORT, () => { console.log(`FutbolStats Calc corriendo en http://localhost:${PORT}`); });
+
