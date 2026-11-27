@@ -3,11 +3,123 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Página</title>
+  <title>FutbolStats Calc</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <h1>Hola, esta es mi página</h1>
-  <p>Mi primera página web subida a GitHub.</p>
+  <main class="container">
+    <header class="hero">
+      <h1>FutbolStats Calc</h1>
+      <p>Calculadora estadística de fútbol: ingresa datos, obtén métricas, probabilidad estimada y un resumen del análisis.</p>
+    </header>
+
+    <section class="card">
+      <h2>Datos de los equipos</h2>
+      <p class="hint">Ingresa datos de los últimos partidos o promedios. La probabilidad es una estimación matemática, no garantiza resultados.</p>
+      <form id="stats-form">
+        <div class="grid-2">
+          <div class="team-block">
+            <h3>Equipo A (Local)</h3>
+            <label>Nombre
+              <input type="text" id="nameA" value="Equipo A" required>
+            </label>
+            <label>Partidos jugados
+              <input type="number" id="playedA" min="1" value="5" required>
+            </label>
+            <label>Victorias
+              <input type="number" id="winsA" min="0" value="3" required>
+            </label>
+            <label>Empates
+              <input type="number" id="drawsA" min="0" value="1" required>
+            </label>
+            <label>Derrotas
+              <input type="number" id="lossesA" min="0" value="1" required>
+            </label>
+            <label>Goles a favor
+              <input type="number" id="gfA" min="0" value="8" required>
+            </label>
+            <label>Goles en contra
+              <input type="number" id="gaA" min="0" value="4" required>
+            </label>
+            <label>Forma últimos 5 (ej: G-E-P-G-G)
+              <input type="text" id="formA" value="G-G-E-P-G" placeholder="G,E,P,G,G">
+            </label>
+            <label>Tiros promedio (opcional)
+              <input type="number" id="shotsA" min="0" step="0.1">
+            </label>
+            <label>Posesión % promedio (opcional)
+              <input type="number" id="posA" min="0" max="100" step="0.1">
+            </label>
+            <label>Tarjetas amarillas promedio (opcional)
+              <input type="number" id="ycA" min="0" step="0.1">
+            </label>
+          </div>
+
+          <div class="team-block">
+            <h3>Equipo B (Visitante)</h3>
+            <label>Nombre
+              <input type="text" id="nameB" value="Equipo B" required>
+            </label>
+            <label>Partidos jugados
+              <input type="number" id="playedB" min="1" value="5" required>
+            </label>
+            <label>Victorias
+              <input type="number" id="winsB" min="0" value="2" required>
+            </label>
+            <label>Empates
+              <input type="number" id="drawsB" min="0" value="1" required>
+            </label>
+            <label>Derrotas
+              <input type="number" id="lossesB" min="0" value="2" required>
+            </label>
+            <label>Goles a favor
+              <input type="number" id="gfB" min="0" value="6" required>
+            </label>
+            <label>Goles en contra
+              <input type="number" id="gaB" min="0" value="6" required>
+            </label>
+            <label>Forma últimos 5 (ej: G-E-P-G-G)
+              <input type="text" id="formB" value="P-G-E-G-P" placeholder="G,E,P,G,G">
+            </label>
+            <label>Tiros promedio (opcional)
+              <input type="number" id="shotsB" min="0" step="0.1">
+            </label>
+            <label>Posesión % promedio (opcional)
+              <input type="number" id="posB" min="0" max="100" step="0.1">
+            </label>
+            <label>Tarjetas amarillas promedio (opcional)
+              <input type="number" id="ycB" min="0" step="0.1">
+            </label>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">Calcular análisis</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" id="results" hidden>
+      <h2>Resultados</h2>
+      <div id="probability" class="probability"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th id="thA">Equipo A</th>
+              <th id="thB">Equipo B</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+      <div class="summary">
+        <h3>Resumen del análisis</h3>
+        <p id="summary-text"></p>
+        <p class="hint">Más adelante este resumen lo generará una IA usando datos reales obtenidos por API/backend seguro.</p>
+      </div>
+    </section>
+  </main>
+  <script src="js/script.js"></script>
 </body>
 </html>

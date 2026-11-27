@@ -1,9 +1,51 @@
-﻿body {
-  font-family: Arial, sans-serif;
-  margin: 40px;
-  background: #f5f5f5;
-  color: #333;
+﻿:root {
+  --bg: #0f172a;
+  --card: #111827;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #22c55e;
+  --accent2: #3b82f6;
+  --border: #1f2937;
 }
-h1 {
-  color: #2c3e50;
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #020617, var(--bg));
+  color: var(--text);
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.hero { margin-bottom: 24px; }
+.hero h1 { margin: 0 0 8px; font-size: 2rem; }
+.hero p, .hint { color: var(--muted); }
+.card {
+  background: rgba(17,24,39,0.95);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.team-block { background: #0b1220; padding: 16px; border-radius: 10px; border: 1px solid var(--border); }
+label { display: block; font-size: 0.9rem; margin-bottom: 10px; color: #d1d5db; }
+input {
+  width: 100%; margin-top: 4px; padding: 10px; border-radius: 8px;
+  border: 1px solid #374151; background: #111827; color: var(--text);
+}
+.actions { margin-top: 16px; }
+button {
+  background: var(--accent); color: #052e16; border: none; padding: 12px 18px;
+  border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+button:hover { filter: brightness(1.05); }
+.probability { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.prob-box { background: #0b1220; border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+.prob-box .value { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; }
+th { color: #93c5fd; }
+.summary { margin-top: 16px; padding: 14px; background: #0b1220; border-radius: 10px; border: 1px solid var(--border); }
+@media (max-width: 800px) {
+  .grid-2, .probability { grid-template-columns: 1fr; }
 }
