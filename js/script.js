@@ -307,7 +307,7 @@ function bindManualFlags() {
 async function selectMatch(matchId) {
   setStatus("Cargando estadísticas del partido...");
   try {
-    var data = await fetchJson("/api/match-analysis?matchId=" + encodeURIComponent(matchId));
+    var comp = document.getElementById("competition-select").value; var data = await fetchJson("/api/match-analysis?matchId=" + encodeURIComponent(matchId) + "&competition=" + encodeURIComponent(comp));
     selectedMatch = data.match;
     fillTeam("A", data.home, data.estimated?.home);
     fillTeam("B", data.away, data.estimated?.away);
@@ -334,3 +334,4 @@ document.getElementById("stats-form").addEventListener("submit", function(e) {
 
 bindManualFlags();
 loadCompetitions();
+
