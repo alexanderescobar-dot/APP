@@ -74,7 +74,7 @@ app.get("/api/competitions", async (req, res) => {
     if (!ensureToken(res)) return;
     const data = await fd("/competitions");
     const allowed = new Set(["TIER_ONE"]);
-    const comps = (data.competitions || []).filter(c => allowed.has(c.plan) && c.type === "LEAGUE");
+    const comps = (data.competitions || []).filter(c => allowed.has(c.plan) && (c.type === "LEAGUE" || c.type === "CUP"));
     res.json({ competitions: comps.map(c => ({ id: c.id, name: c.name, code: c.code, area: c.area?.name, emblem: c.emblem })) });
   } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
