@@ -15,6 +15,26 @@ const API_BASE = "https://api.football-data.org/v4";
 const cache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+const COMP_DEFAULTS = {
+  PL:  { shots: 13.5, corners: 5.2, yellow: 1.8, red: 0.08 },
+  PD:  { shots: 12.5, corners: 4.8, yellow: 2.3, red: 0.12 },
+  SA:  { shots: 13.0, corners: 5.0, yellow: 2.1, red: 0.10 },
+  BL1: { shots: 14.0, corners: 5.3, yellow: 1.9, red: 0.09 },
+  FL1: { shots: 12.8, corners: 4.9, yellow: 1.9, red: 0.11 },
+  DED: { shots: 14.5, corners: 5.5, yellow: 1.7, red: 0.08 },
+  PPL: { shots: 12.5, corners: 4.7, yellow: 2.4, red: 0.13 },
+  ELC: { shots: 12.5, corners: 5.1, yellow: 1.9, red: 0.09 },
+  BSA: { shots: 12.0, corners: 4.8, yellow: 2.3, red: 0.12 },
+  CL:  { shots: 13.5, corners: 5.0, yellow: 1.9, red: 0.09 },
+  EC:  { shots: 12.0, corners: 4.8, yellow: 2.0, red: 0.10 },
+  WC:  { shots: 12.5, corners: 4.9, yellow: 1.8, red: 0.09 },
+  DEFAULT: { shots: 12.8, corners: 5.0, yellow: 2.0, red: 0.10 }
+};
+
+function getDefaults(compCode) {
+  return COMP_DEFAULTS[compCode] || COMP_DEFAULTS.DEFAULT;
+}
+
 function getCache(key) {
   const hit = cache.get(key);
   if (!hit) return null;
@@ -120,7 +140,7 @@ app.get("/api/match-analysis", async (req, res) => {
     const { matchId } = req.query;
     if (!matchId) return res.status(400).json({ error: "matchId requerido" });
     const raw = await fd(`/matches/${encodeURIComponent(matchId)}`);
-    const m = raw.match || raw; // football-data v4 returns match at root
+    const m = raw.match || raw;
     const comp = m.competition?.code || m.competition?.id;
     const homeId = m.homeTeam?.id;
     const awayId = m.awayTeam?.id;
@@ -135,12 +155,20 @@ app.get("/api/match-analysis", async (req, res) => {
     ]);
     const home = computeTeamStats(homeId, homeData.matches || [], homeName);
     const away = computeTeamStats(awayId, awayData.matches || [], awayName);
+    const defaults = getDefaults(m.competition?.code);
     res.json({
       match: {
         id: m.id, utcDate: m.utcDate, status: m.status, venue: m.venue,
         competition: m.competition, homeTeam: m.homeTeam, awayTeam: m.awayTeam
       },
-      home, away
+      home, away,
+      estimated: {
+        source: "estimated",
+        competitionCode: m.competition?.code || "DEFAULT",
+        note: "Valores estimados por promedio de competición. Editables manualmente.",
+        home: { ...defaults },
+        away: { ...defaults }
+      }
     });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message, details: e.details });

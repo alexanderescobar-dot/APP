@@ -10,7 +10,7 @@
   <main class="container">
     <header class="hero">
       <h1>FutbolStats Calc</h1>
-      <p>Busca un partido real, carga estadísticas automáticamente y calcula una probabilidad estimada. La IA se usará después para generar el resumen con datos reales.</p>
+      <p>Busca un partido real, carga estadísticas automáticamente y calcula probabilidades estimadas. Las métricas no disponibles se autocompletan como estimadas y son editables.</p>
     </header>
 
     <section class="card">
@@ -36,7 +36,7 @@
 
     <section class="card">
       <h2>Datos de los equipos</h2>
-      <p class="hint">Puedes editar los valores antes de calcular. Los campos opcionales pueden quedar vacíos si la fuente no los tiene.</p>
+      <p class="hint">Los goles y forma se cargan desde datos reales cuando hay historial. Tiros, córners y tarjetas se autocompletan como <span class="badge-est">estimado</span> por competición y puedes editarlos.</p>
       <form id="stats-form">
         <div class="grid-2">
           <div class="team-block">
@@ -65,14 +65,17 @@
             <label>Forma últimos 5 (G/E/P)
               <input type="text" id="formA" value="G-G-E-P-G" placeholder="G,E,P,G,G">
             </label>
-            <label>Tiros promedio (opcional)
-              <input type="number" id="shotsA" min="0" step="0.1">
+            <label>Tiros promedio <span class="badge-est" id="est-shotsA">estimado</span>
+              <input type="number" id="shotsA" min="0" step="0.1" value="13">
             </label>
-            <label>Posesión % promedio (opcional)
-              <input type="number" id="posA" min="0" max="100" step="0.1">
+            <label>Córners promedio <span class="badge-est" id="est-cornersA">estimado</span>
+              <input type="number" id="cornersA" min="0" step="0.1" value="5">
             </label>
-            <label>Tarjetas amarillas promedio (opcional)
-              <input type="number" id="ycA" min="0" step="0.1">
+            <label>Tarjetas amarillas promedio <span class="badge-est" id="est-ycA">estimado</span>
+              <input type="number" id="ycA" min="0" step="0.1" value="2">
+            </label>
+            <label>Tarjetas rojas promedio <span class="badge-est" id="est-rcA">estimado</span>
+              <input type="number" id="rcA" min="0" step="0.01" value="0.1">
             </label>
           </div>
 
@@ -102,17 +105,36 @@
             <label>Forma últimos 5 (G/E/P)
               <input type="text" id="formB" value="P-G-E-G-P" placeholder="G,E,P,G,G">
             </label>
-            <label>Tiros promedio (opcional)
-              <input type="number" id="shotsB" min="0" step="0.1">
+            <label>Tiros promedio <span class="badge-est" id="est-shotsB">estimado</span>
+              <input type="number" id="shotsB" min="0" step="0.1" value="13">
             </label>
-            <label>Posesión % promedio (opcional)
-              <input type="number" id="posB" min="0" max="100" step="0.1">
+            <label>Córners promedio <span class="badge-est" id="est-cornersB">estimado</span>
+              <input type="number" id="cornersB" min="0" step="0.1" value="5">
             </label>
-            <label>Tarjetas amarillas promedio (opcional)
-              <input type="number" id="ycB" min="0" step="0.1">
+            <label>Tarjetas amarillas promedio <span class="badge-est" id="est-ycB">estimado</span>
+              <input type="number" id="ycB" min="0" step="0.1" value="2">
+            </label>
+            <label>Tarjetas rojas promedio <span class="badge-est" id="est-rcB">estimado</span>
+              <input type="number" id="rcB" min="0" step="0.01" value="0.1">
             </label>
           </div>
         </div>
+
+        <div class="lines-config">
+          <h3>Líneas para Over/Under</h3>
+          <div class="grid-3">
+            <label>Línea tarjetas totales
+              <input type="number" id="lineCards" min="0" step="0.5" value="3.5">
+            </label>
+            <label>Línea tiros totales
+              <input type="number" id="lineShots" min="0" step="0.5" value="24.5">
+            </label>
+            <label>Línea córners totales
+              <input type="number" id="lineCorners" min="0" step="0.5" value="9.5">
+            </label>
+          </div>
+        </div>
+
         <div class="actions">
           <button type="submit">Calcular análisis</button>
         </div>
@@ -122,6 +144,22 @@
     <section class="card" id="results" hidden>
       <h2>Resultados</h2>
       <div id="probability" class="probability"></div>
+
+      <h3>Mercados de probabilidad</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Mercado</th>
+              <th>Resultado</th>
+              <th>Probabilidad</th>
+            </tr>
+          </thead>
+          <tbody id="markets-body"></tbody>
+        </table>
+      </div>
+
+      <h3>Métricas por equipo</h3>
       <div class="table-wrap">
         <table>
           <thead>
@@ -137,7 +175,7 @@
       <div class="summary">
         <h3>Resumen del análisis</h3>
         <p id="summary-text"></p>
-        <p class="hint">Estimación matemática basada en datos históricos. No garantiza resultados. El resumen con IA se integrará después mediante backend seguro.</p>
+        <p class="hint">Estimación estadística basada en datos disponibles. Los valores marcados como “estimado” son autocompletados por promedio de competición y deben verificarse. No garantiza resultados.</p>
       </div>
     </section>
   </main>
