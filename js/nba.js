@@ -34,7 +34,9 @@
       avgPF: num("nba-pf"+prefix)||112,
       avgPA: num("nba-pa"+prefix)||112,
       threePT: num("nba-3pt"+prefix)||12.5,
-      steals: num("nba-stl"+prefix)||7.5
+      steals: num("nba-stl"+prefix)||7.5,
+      rebounds: num("nba-reb"+prefix)||44.0,
+      assists: num("nba-ast"+prefix)||26.0
     };
   }
 
@@ -50,12 +52,14 @@
 
   function render(a,b){
     var p = calc(a,b);
-    var linePts=num("nba-linePts")??220.5, line3=num("nba-line3")??24.5, lineStl=num("nba-lineStl")??14.5;
-    var sdTotal=16, sd3=4, sdStl=3;
+    var linePts=num("nba-linePts")??220.5, line3=num("nba-line3")??24.5, lineStl=num("nba-lineStl")??14.5, lineReb=num("nba-lineReb")??88.5, lineAst=num("nba-lineAst")??51.5;
+    var sdTotal=16, sd3=4, sdStl=3, sdReb=6, sdAst=5;
     var overPts=(1-normalCDF(linePts,p.total,sdTotal))*100;
-    var total3=a.threePT+b.threePT, totalStl=a.steals+b.steals;
+    var total3=a.threePT+b.threePT, totalStl=a.steals+b.steals, totalReb=a.rebounds+b.rebounds, totalAst=a.assists+b.assists;
     var over3=(1-normalCDF(line3,total3,sd3))*100;
     var overStl=(1-normalCDF(lineStl,totalStl,sdStl))*100;
+    var overReb=(1-normalCDF(lineReb,totalReb,sdReb))*100;
+    var overAst=(1-normalCDF(lineAst,totalAst,sdAst))*100;
 
     document.getElementById("nba-labelA").textContent="Local: "+a.name;
     document.getElementById("nba-labelB").textContent="Visitante: "+b.name;
@@ -77,13 +81,19 @@
     row("Total robos (est.)", "Esperado", fmt(totalStl,1));
     row("Total robos (línea "+fmt(lineStl,1)+")", "Más de "+fmt(lineStl,1), fmt(overStl,1)+"%");
     row("Total robos (línea "+fmt(lineStl,1)+")", "Menos de "+fmt(lineStl,1), fmt(100-overStl,1)+"%");
+    row("Total rebotes (est.)", "Esperado", fmt(totalReb,1));
+    row("Total rebotes (línea "+fmt(lineReb,1)+")", "Más de "+fmt(lineReb,1), fmt(overReb,1)+"%");
+    row("Total rebotes (línea "+fmt(lineReb,1)+")", "Menos de "+fmt(lineReb,1), fmt(100-overReb,1)+"%");
+    row("Total asistencias (est.)", "Esperado", fmt(totalAst,1));
+    row("Total asistencias (línea "+fmt(lineAst,1)+")", "Más de "+fmt(lineAst,1), fmt(overAst,1)+"%");
+    row("Total asistencias (línea "+fmt(lineAst,1)+")", "Menos de "+fmt(lineAst,1), fmt(100-overAst,1)+"%");
 
     var fav = p.homeWin>=p.awayWin ? a.name : b.name;
     document.getElementById("nba-summary-text").textContent =
       (selectedGame ? (selectedGame.homeTeam.name+" (Local) vs "+selectedGame.awayTeam.name+" (Visitante). ") : "") +
       "El modelo estima favorito a "+fav+". Puntos esperados: "+fmt(p.expHome,1)+"-"+fmt(p.expAway,1)+" (total "+fmt(p.total,1)+"). "+
-      "Total 3PT estimado: "+fmt(total3,1)+", total robos estimado: "+fmt(totalStl,1)+". "+
-      "3PT y robos son estimados por defecto y editables; la probabilidad es heurística, no garantía.";
+      "Totales estimados: 3PT "+fmt(total3,1)+", robos "+fmt(totalStl,1)+", rebotes "+fmt(totalReb,1)+", asistencias "+fmt(totalAst,1)+". "+
+      "3PT, robos, rebotes y asistencias son estimados por defecto y editables; la probabilidad es heurística, no garantía.";
     document.getElementById("nba-results").hidden = false;
   }
 
@@ -119,8 +129,9 @@
       var h=data.home, a=data.away, est=data.estimated;
       setVal("nba-nameA",h.name); setVal("nba-playedA",h.played||5); setVal("nba-winsA",h.wins||0); setVal("nba-lossesA",h.losses||0); setVal("nba-pfA",fmt(h.avgPF,1)); setVal("nba-paA",fmt(h.avgPA,1));
       setVal("nba-nameB",a.name); setVal("nba-playedB",a.played||5); setVal("nba-winsB",a.wins||0); setVal("nba-lossesB",a.losses||0); setVal("nba-pfB",fmt(a.avgPF,1)); setVal("nba-paB",fmt(a.avgPA,1));
-      setVal("nba-3ptA", est.home.threePT); setVal("nba-stlA", est.home.steals); setVal("nba-3ptB", est.away.threePT); setVal("nba-stlB", est.away.steals);
-      ["nba3A","nbastlA","nba3B","nbastlB"].forEach(function(k){ markEst(k,true); });
+      setVal("nba-3ptA", est.home.threePT); setVal("nba-stlA", est.home.steals); setVal("nba-rebA", est.home.rebounds); setVal("nba-astA", est.home.assists);
+      setVal("nba-3ptB", est.away.threePT); setVal("nba-stlB", est.away.steals); setVal("nba-rebB", est.away.rebounds); setVal("nba-astB", est.away.assists);
+      ["nba3A","nbastlA","nbarebA","nbaastA","nba3B","nbastlB","nbarebB","nbaastB"].forEach(function(k){ markEst(k,true); });
       var box=document.getElementById("nba-selected"); var d=new Date(selectedGame.utcDate);
       box.hidden=false; box.innerHTML="<strong>Juego seleccionado:</strong> "+h.name+" (Local) vs "+a.name+" (Visitante)<br><span class='hint' style='color:#bbf7d0'>"+(isNaN(d)?selectedGame.utcDate:d.toLocaleString())+" · NBA</span><br><span class='hint' style='color:#fcd34d'>"+(est.note||"")+"</span>";
       setStatus("Datos cargados. Puedes editar y calcular.");
@@ -128,8 +139,8 @@
     } catch(e){ setStatus("Error: "+e.message, true); }
   }
 
-  ["nba-3ptA","nba-stlA","nba-3ptB","nba-stlB"].forEach(function(id, i){
-    var keys=["nba3A","nbastlA","nba3B","nbastlB"];
+  ["nba-3ptA","nba-stlA","nba-rebA","nba-astA","nba-3ptB","nba-stlB","nba-rebB","nba-astB"].forEach(function(id, i){
+    var keys=["nba3A","nbastlA","nbarebA","nbaastA","nba3B","nbastlB","nbarebB","nbaastB"];
     var el=document.getElementById(id); if(el) el.addEventListener("input", function(){ markEst(keys[i], false); });
   });
 

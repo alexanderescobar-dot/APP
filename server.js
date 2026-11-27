@@ -242,7 +242,7 @@ app.get("/api/match-analysis", async (req, res) => {
 });
 
 const TSDB_BASE = "https://www.thesportsdb.com/api/v1/json/123";
-const NBA_DEFAULTS = { pointsFor: 112, pointsAgainst: 112, threePT: 12.5, steals: 7.5 };
+const NBA_DEFAULTS = { pointsFor: 112, pointsAgainst: 112, threePT: 12.5, steals: 7.5, rebounds: 44.0, assists: 26.0 };
 
 async function tsdb(pathname) {
   const key = `tsdb:${pathname}`;
@@ -313,7 +313,7 @@ app.get("/api/nba/game-analysis", async (req, res) => {
     res.json({
       game: { id: e.idEvent, utcDate: e.dateEvent + (e.strTime ? "T" + e.strTime : "T00:00:00Z"), competition: { name: "NBA", code: "NBA" }, homeTeam: { id: homeId, name: homeName }, awayTeam: { id: awayId, name: awayName } },
       home, away,
-      estimated: { source: "estimated", note: "3PT y robos son estimados por promedio NBA y editables. Puntos/forma se basan en últimos juegos cuando están disponibles.", home: { threePT: NBA_DEFAULTS.threePT, steals: NBA_DEFAULTS.steals }, away: { threePT: NBA_DEFAULTS.threePT, steals: NBA_DEFAULTS.steals } }
+      estimated: { source: "estimated", note: "3PT, robos, rebotes y asistencias son estimados por promedio NBA y editables. Puntos/forma se basan en últimos juegos cuando están disponibles.", home: { threePT: NBA_DEFAULTS.threePT, steals: NBA_DEFAULTS.steals, rebounds: NBA_DEFAULTS.rebounds, assists: NBA_DEFAULTS.assists }, away: { threePT: NBA_DEFAULTS.threePT, steals: NBA_DEFAULTS.steals, rebounds: NBA_DEFAULTS.rebounds, assists: NBA_DEFAULTS.assists } }
     });
   } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
